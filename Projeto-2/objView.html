@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+attribute vec3 vNormal;
+uniform mat4 mProjection;
+uniform mat4 mModelView;
+varying vec3 fNormal;
+void main(){
+    vec4 position = mProjection * mModelView * vPosition;
+	position.z = -vPosition.z;
+    gl_Position = position;
+    fNormal = abs(vNormal);
+}
+</script>
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+varying vec3 fNormal;
+void main() {
+    gl_FragColor = vec4(fNormal, 1.0);
+}
+</script>
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="cube.js"></script>
+<script type="text/javascript" src="sphere.js"></script>
+<script type="text/javascript" src="cylinder.js"></script>
+<script type="text/javascript" src="bunnyData.js"></script>
+<script type="text/javascript" src="bunny.js"></script>
+<script type="text/javascript" src="objView.js"></script>
+</head>
+<body>
+    <title>3D Visualization</title>
+    <canvas id="gl-canvas" width="512" height="512">
+        Oops... your browser doesn't support the HTML5 canvas element"
+    </canvas>
+		
+	 <br>
+	 <button type="button" id="newCube">Cube</button>
+	 <button type="button" id="newSphere">Sphere</button> 
+	 <button type="button" id="newCylinder">Cylinder</button>
+	 <button type="button" id="newBunny">Standford Bunny</button> <br>
+	 
+	 <h4>Views</h4>
+	 
+	 <button type="button" id="multView" style="margin-top: 5px">Multiple View</button> 
+	 <button type="button" id="singleView" style="margin-top: 5px">Single View</button> <br>
+	 
+	 <button type="button" id="wireFrame" style="margin-top: 5px">Wireframe</button> 
+	 <button type="button" id="filled" style="margin-top: 5px">Filled</button> <br>
+	 
+	 <h4>Projections</h4>
+	 
+	 <button type="button" id="obliqueProjection" style="margin-top: 5px">Oblique Projection</button> 
+	 <i>l</i> <input type="range" min="0.0" max="1.0" value="0.5" step="0.05" class="slider" id="lOblique"> 
+	 <i>alpha</i> <input type="range" min="0.0" max="45.0" value="45.0" step="0.5" class="slider" id="alphaOblique"> <br>
+	 
+	 <button type="button" id="axonometricProjection" style="margin-top: 5px">Axonometric Projection</button> 
+	 <i>theta</i> <input type="range" min="-180.0" max="180.0" value="-20.26" step="1.0" class="slider" id="thetaAxonometric">
+	 <i>gamma</i> <input type="range" min="-180.0" max="180.0" value="19.42" step="1.0" class="slider" id="gammaAxonometric"> <br>
+	 
+	 <button type="button" id="perspectiveProjection" style="margin-top: 5px">Perspective Projection</button>
+	 <i>d</i> <input type="range" min="1.0" max="10.0" value="3.0" step="0.05" class="slider" id="dPerspective"> <br>
+	 
+</body>
+</html>

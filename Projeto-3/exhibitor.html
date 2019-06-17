@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<head>
+</head>
+<script id="default-vertex" type="x-shader/x-vertex">
+uniform mat4 mModelView;
+uniform mat4 mProjection;
+attribute vec4 vPosition;
+attribute vec3 vNormal;
+varying vec3 fNormal;
+varying vec3 fTexCoords;
+
+void main() {
+	gl_Position = mProjection * mModelView * vPosition;
+	fNormal = abs(vNormal);
+	fTexCoords = vPosition.xyz;
+}
+</script>
+<script id="default-fragment" type="x-shader/x-fragment">
+precision highp float;
+uniform sampler2D texture;
+uniform int option;
+uniform int texOpt;
+varying vec3 fNormal;
+varying vec3 fTexCoords;
+
+const float PI = 3.1415926535897932384626433832795;
+
+//selects the coordenates (u,v) to generate, 
+//according to the variable texOpt
+vec2 getTexCoord(vec3 coords) {
+
+	vec2 texCoords;
+	float u;
+	float v;
+	
+	if(texOpt == 0) {
+		u = coords.x;
+		v = coords.y;
+		
+		texCoords = vec2(u, v) + vec2(0.5, 0.5);
+	} else {
+		//cylindrical
+		if(texOpt == 1) {
+			u = atan(coords.z, coords.x) / (2.0*PI);
+			v = coords.y;
+			texCoords = vec2(0.5 - u, 0.5 + v);
+		//spherical
+		} else {
+			float r = length(coords);
+			u = atan(-coords.z, coords.x) / PI + 1.0;
+			v = asin(coords.y/r) / PI;
+			texCoords = vec2(u*0.5, 0.5 + v);
+		}		
+	}
+	
+	return texCoords;
+} 
+
+void main() {
+	if(option == 0)
+		gl_FragColor = vec4(fNormal, 1.0);
+	else {
+		vec2 texCoords = getTexCoord(fTexCoords);
+		gl_FragColor = texture2D(texture, texCoords);
+	}
+}
+</script> 
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="../Common/sphere.js"></script>
+<script type="text/javascript" src="../Common/cylinder.js"></script>
+<script type="text/javascript" src="../Common/cube.js"></script>
+<script type="text/javascript" src="exhibitor.js"></script>
+<body style="margin: 0px">
+	<title>Objects Exhibitor</title>
+    <div>
+		<div style="position: absolute; font-family: Sans-serif; background-color: rgb(76, 200, 76);">
+			<p>Rafael Gameiro numero 50677</p>
+			<P>Rui Santos numero 50833</p>
+		</div>
+			
+        <canvas id="gl-canvas" width="100%" height="100%">
+            Ooops! Your browser doen't support WebGL!
+        </canvas>
+    </div>
+    
+    <br>
+	<div style="float: left; margin-right: 20px">
+		<h4 style="font-family: Sans-serif;">Objects</h4>
+			
+		<button type="button" id="cube">Cube</button>
+		<button type="button" id="sphere">Sphere</button> 
+		<button type="button" id="cylinder">Cylinder</button>
+	</div>
+		
+	<div style="float: left; margin-right: 20px">
+		<h4 style="font-family: Sans-serif;">View</h4>
+			
+		<button type="button" id="wireFrame">Wireframe</button> 
+		<button type="button" id="filled">Filled</button>
+		<button type="button" id="texture">Texture</button>
+	</div>
+
+	<div style="float: left">
+		<h4 style="font-family: Sans-serif;">Texture</h4>
+			
+		<button type="button" id="sphericalTex">Spherical</button> 
+		<button type="button" id="cylindricalTex">Cylindrical</button> 
+		<button type="button" id="orthoTex">Orthogonal</button>
+	</div>	 
+</body>
+</html>

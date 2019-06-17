@@ -1,0 +1,244 @@
+<!--Rafael Gameiro nº 50677 -->
+<!--Rui Santos nº 50833 -->
+
+<!DOCTYPE html>
+<html>
+<head>
+<script id="vertex-shader" type="x-shader/x-vertex">
+attribute vec4 vPosition;
+uniform vec2 center;
+uniform float scale;
+uniform float fix;
+varying vec2 fPosition;
+void main(){
+    gl_Position = vPosition;
+	fPosition = vPosition.xy;
+	fPosition.x *= 0.5;
+	fPosition.y *= 0.5;
+	fPosition.x = (fPosition.x * scale) + center.x;
+	fPosition.y = (fPosition.y * scale) + center.y;
+	fPosition.y /= fix;
+    
+}
+</script>
+<script id="fragment-shader" type="x-shader/x-fragment">
+precision mediump float;
+varying vec2 fPosition;
+uniform int func;
+uniform int n;
+
+/**
+	Convert between the HSV and RGB color model.
+	Taken from http://www.cs.rit.edu/~ncs/color/t_convert.html and rewritten for GLSL
+*/
+vec4 HSVtoRGB(float h, float s, float v)
+{
+	int i;
+	float f, p, q, t;
+	vec4 RGB;
+	
+	if(h < 0.0)
+		h += 360.0;
+
+	if(s == 0.0) {
+		// achromatic (grey)
+		RGB.x = RGB.y = RGB.z = v;
+		RGB.w = 1.0;
+		return RGB;
+	}	
+
+	h /= 60.0; // sector 0 to 5
+	i = int(floor(h));
+	f = h - float(i); // fracional part of h
+	p = v * (1.0 - s);
+	q = v * (1.0 - s * f);
+	t = v * (1.0 - s * (1.0 - f));
+
+	if(i==0) {
+		RGB.x = v;
+		RGB.y = t;
+		RGB.z = p;
+	}else if(i==1) {
+		RGB.x = q;
+		RGB.y = v;
+		RGB.z = p;
+	}else if(i==2) {
+		RGB.x = p;
+		RGB.y = v;
+		RGB.z = t;
+	}else if(i==3) {
+		RGB.x = p;
+		RGB.y = q;
+		RGB.z = v;
+	}else if(i==4) {
+		RGB.x = t;
+		RGB.y = p;
+		RGB.z = v;
+	}else if(i==5) {
+		RGB.x = v;
+		RGB.y = p;
+		RGB.z = q;
+	}else {
+		RGB.x = 1.0;
+		RGB.y = 1.0;
+		RGB.z = 1.0;
+	}
+	RGB.w = 1.0;
+	return RGB;
+}
+
+/**
+	takes a complex and calculates its exponential
+*/
+vec2 complexExp(vec2 z)
+{
+	return vec2(exp(z.x)*cos(z.y), exp(z.x)*sin(z.y));
+}
+
+/**
+	takes two complex number and calculates multiplies them 
+*/
+vec2 complexMult(vec2 a, vec2 b)
+{
+	return vec2(a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x);
+}
+
+/**
+	takes two complex number and calculates the division between them
+*/
+vec2 complexDiv(vec2 a, vec2 b) 
+{
+	return vec2((a.x * b.x + a.y * b.y)/(pow(b.x, 2.0) + pow(b.y, 2.0)), (a.y * b.x - a.x * b.y)/(pow(b.x, 2.0) + pow(b.y, 2.0)));
+}
+
+/**
+	from a vec2, a complex number, translates its values into a polar coordinates
+*/
+vec2 convertPolar(vec2 z)
+{
+	float r;
+	float theta;
+	
+	r = sqrt(pow(z.x, 2.0) + pow(z.y, 2.0));
+	theta = degrees(atan(z.y,z.x));
+	
+	return vec2(r,theta);
+}
+
+/**
+	receives an vec2 fPosition and int times as arguments
+	depending on the value of func, creates one of the existing functions,
+	and if times != 1, does iterations of the selected function
+*/
+vec4 defineFunc(vec2 fPosition, int times)
+{
+	float h = 0.0;
+	float v = 0.0;
+	vec2 solution;
+	vec2 aux = fPosition;
+	if(func == 1)
+		solution = convertPolar(fPosition);
+	else if(func == 2) {
+		for(int i = 0; i < 30; i++) {
+			if(i == times)
+				break;
+			aux = complexMult(aux, aux);
+		}
+		solution = convertPolar(aux);
+	} else if(func == 3) {
+		for(int i = 0; i < 30; i++) {
+			if(i == times)
+				break;
+			aux = complexExp(complexDiv(vec2(100.0,0.0), aux));
+		}
+		solution = convertPolar(aux);
+	} else if(func == 4) {
+		for(int i = 0; i < 30; i++) {
+			if(i == times + 1)
+				break;
+			vec2 expZ = complexExp(aux);
+			vec2 z = vec2(aux.x - 2.0, aux.y);
+			vec2 z1 = complexMult(z, z);
+			vec2 z2 = complexMult(z1, vec2(aux.x + 1.0, aux.y - 2.0));
+			vec2 z3 = complexMult(z2, vec2(aux.x + 2.0, aux.y + 2.0));
+			vec2 exp1 = complexMult(aux, complexMult(aux, aux));
+			vec2 z4 = complexDiv(z3, exp1);
+			aux = vec2(z4.x + expZ.x, z4.y + expZ.y);
+		}
+		solution = convertPolar(aux);
+	} else if(func == 5 || func == 6 || func == 7) {
+		for(int i = 0; i < 30; i++) {
+			if(i == times && func == 5)	
+				break;
+			if(i == (3*times) && func == 6)
+				break;
+			if(i == (6*times) && func == 7)
+				break;		
+			vec2 z1 = complexMult(aux, aux);
+			z1.x ++;
+			vec2 z2 = complexMult(aux, aux);
+			z2.x --;
+			aux = complexDiv(z1,z2);	
+		}
+		solution = convertPolar(aux);
+	} else{
+		for(int i = 0; i < 30; i++) {
+			if(i == 2*times)
+				break;
+			vec2 z = vec2(aux.x+2.0, aux.y);
+			vec2 z1 = complexMult(z, z);
+			vec2 z2 = complexMult(z1, vec2(aux.x-1.0, aux.y-2.0));
+			aux = complexMult(z2, vec2(aux.x, aux.y+1.0));
+		}
+		solution = convertPolar(aux);
+	}
+	h = solution.y;	
+	v = fract(log2(solution.x));
+	
+	return HSVtoRGB(h, 1.0, v);
+}
+
+/**
+	creates a copy of fPosition, called pos
+	uses pos and n, number of iterations, in defineFunc to create the vec4 rgb 
+	associates the rgb to the fragment shader variable, gl_FragColor
+*/
+void main() {
+	vec2 pos = fPosition;
+	vec4 rgb = defineFunc(pos, n);
+    gl_FragColor = rgb;
+
+}
+</script>
+<script type="text/javascript" src="../Common/webgl-utils.js"></script>
+<script type="text/javascript" src="../Common/initShaders.js"></script>
+<script type="text/javascript" src="../Common/MV.js"></script>
+<script type="text/javascript" src="fComplex.js"></script>
+</head>
+<body>
+    <title>Complex function</title>
+    <div>
+		<h2 style="font-family: sans-serif">CGI 18/19 Projeto 1 : Visualizacao de funcoes complexas</h2>
+		<h3 style="font-family: sans-serif">Authors</h3>
+		<h3 style="font-family: courier">50677, Rafael Gameiro</h3>
+		<h3 style="font-family: courier">50833, Rui Santos</h3>
+		<canvas id="gl-canvas" width="512" height="512">
+			Oops... your browser doesn't support the HTML5 canvas element"
+		</canvas>
+		<br>
+		<button id="btn1" value="Add one" type="button" style="margin-right: 10px">+</button> 
+		<span id="field">1</span>
+		<button id="btn2" value="Subtract one" type="button" style="margin-left: 10px">-</button> 
+		<select id="funcSelect">
+			<option value="f0">w = z</option>
+			<option value="f1">w = z^2</option>
+			<option value="f2">exp(100 / z)</option>
+			<option value="f3">f3^3(z)</option>
+			<option value="f4">f4:(z^2 + 1) / (z^2 - 1)</option>
+			<option value="f5">f4^3(z)</option>
+			<option value="f6">f4^6(z)</option>
+			<option value="f7">[[(z+2)^2](z-1-2i)(z+i)]^2(z)</option>
+		</select>
+	</div>
+</body>
+</html>
